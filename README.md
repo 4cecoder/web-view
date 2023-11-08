@@ -5,6 +5,8 @@
 [Latest Version]: https://img.shields.io/crates/v/web-view.svg
 [crates.io]: https://crates.io/crates/web-view 
 
+## This fork adds macOS Edit menu actions like cut/copy/paste but limits support to macOS only.
+
 - [Prerequisites](#prerequisites)
 - [Installation and Configuration](#installation-and-configuration)
 - [Known Issues and Limitations](#known-issues-and-limitations)
