@@ -5,9 +5,6 @@
 //!
 //! [webview]: https://github.com/zserge/webview
 
-#[cfg(all(target_family = "unix", not(target_os = "macos")))]
-mod gtk;
-
 use std::os::raw::*;
 
 pub enum CWebView {} // opaque type, only used in ffi pointers
