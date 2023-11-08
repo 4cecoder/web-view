@@ -41,7 +41,7 @@ WEBVIEW_API void* webview_get_user_data(webview_t w) {
 }
 
 WEBVIEW_API webview_t webview_new(
-  const char* title, const char* url, 
+  const char* title, const char* url,
   int width, int height, int resizable, int debug, int frameless, int visible, int min_width, int min_height, int hide_instead_of_close,
   webview_external_invoke_cb_t external_invoke_cb, void* userdata) {
 	struct cocoa_webview* wv = (struct cocoa_webview*)calloc(1, sizeof(*wv));
@@ -135,7 +135,7 @@ static void webview_window_will_close(id self, SEL cmd, id notification) {
   event on the application allowing the `webview_loop` to continue
   its current iteration.
   ***/
-  ((id(*)(id, SEL, id, id))objc_msgSend)(app, sel_registerName("postEvent:atStart:"), event, 
+  ((id(*)(id, SEL, id, id))objc_msgSend)(app, sel_registerName("postEvent:atStart:"), event,
                     ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSDate"),
                       sel_registerName("distantPast")));
 }
@@ -311,7 +311,7 @@ WEBVIEW_API int webview_init(webview_t w) {
                     (IMP)download_failed, "v@:@@");
     objc_registerClassPair(__WKDownloadDelegate);
   }
-  
+
   id downloadDelegate =
       ((id(*)(id, SEL))objc_msgSend)((id)__WKDownloadDelegate, sel_registerName("new"));
 
@@ -477,7 +477,7 @@ WEBVIEW_API int webview_init(webview_t w) {
   if (wv->visible) {
     ((id(*)(id, SEL))objc_msgSend)(wv->priv.window, sel_registerName("orderFrontRegardless"));
   }
-  
+
   ((id(*)(id, SEL, CGSize))objc_msgSend)(wv->priv.window, sel_registerName("setMinSize:"), CGSizeMake(wv->min_width, wv->min_height));
 
   ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSApplication"),
@@ -540,6 +540,47 @@ WEBVIEW_API int webview_init(webview_t w) {
                        sel_registerName("stringByAppendingString:"), appName);
   item = create_menu_item(title, wv->frameless ? "terminate:" : "close", "q");
   ((id(*)(id, SEL, id))objc_msgSend)(appMenu, sel_registerName("addItem:"), item);
+
+  // ----------------------------------------------------------------------------
+  // Add support for Edit menu, with cut/copy/paste/select all/undo/redo.
+  // This also allows keyboard shortcuts for these actions to work.
+  // See https://github.com/Boscop/web-view/issues/83#issuecomment-597470641
+  id editMenuItem =
+      ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
+
+  ((id(*)(id, SEL, id, id, id))objc_msgSend)(editMenuItem,
+               sel_registerName("initWithTitle:action:keyEquivalent:"), get_nsstring("Edit"),
+               NULL, get_nsstring(""));
+
+  id editMenu =
+      ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("initWithTitle:"), get_nsstring("Edit"));
+  ((id(*)(id, SEL))objc_msgSend)(editMenu, sel_registerName("autorelease"));
+
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenuItem, sel_registerName("setSubmenu:"), editMenu);
+  ((id(*)(id, SEL, id))objc_msgSend)(menubar, sel_registerName("addItem:"), editMenuItem);
+
+   item = create_menu_item(get_nsstring("Undo"), "undo:", "z");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Redo"), "redo:", "y");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenuItem"), sel_registerName("separatorItem"));
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Cut"), "cut:", "x");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Copy"), "copy:", "c");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Paste"), "paste:", "v");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Select All"), "selectAll:", "a");
+  ((id(*)(id, SEL, id))objc_msgSend)(editMenu, sel_registerName("addItem:"), item);
+  // ----------------------------------------------------------------------------
 
   ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSApplication"),
                             sel_registerName("sharedApplication")),
@@ -623,7 +664,7 @@ WEBVIEW_API void webview_set_minimized(webview_t w, int minimize) {
   } else {
     ((id(*)(id, SEL, id))objc_msgSend)(wv->priv.window, sel_registerName("deminiaturize:"), NULL);
   }
-  
+
 }
 
 WEBVIEW_API void webview_set_visible(webview_t w, int visible) {
